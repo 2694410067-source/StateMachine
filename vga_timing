@@ -1,0 +1,68 @@
+module vga_timing(
+    input  wire pix_clk,    
+    input  wire rst_n,     
+    output reg  hsync,      
+    output reg  vsync,     
+    output wire valid,      
+    output reg  [9:0] h_cnt,
+    output reg  [9:0] v_cnt 
+);
+
+
+localparam H_ACTIVE  = 640;  
+localparam H_FRONT   = 16;   
+localparam H_SYNC    = 96;   
+localparam H_BACK    = 48;   
+localparam H_TOTAL   = H_ACTIVE + H_FRONT + H_SYNC + H_BACK;  
+
+localparam V_ACTIVE  = 480;  
+localparam V_FRONT   = 10;  
+localparam V_SYNC    = 2;   
+localparam V_BACK    = 33;  
+localparam V_TOTAL   = V_ACTIVE + V_FRONT + V_SYNC + V_BACK; 
+
+always @(posedge pix_clk or negedge rst_n) begin
+    if(!rst_n)
+        h_cnt <= 10'd0;
+    else if(h_cnt == H_TOTAL - 1'b1)
+        h_cnt <= 10'd0;
+    else
+        h_cnt <= h_cnt + 1'b1;
+end
+
+
+always @(posedge pix_clk or negedge rst_n) begin
+    if(!rst_n)
+        v_cnt <= 10'd0;
+    else if(h_cnt == H_TOTAL - 1'b1) begin
+        if(v_cnt == V_TOTAL - 1'b1)
+            v_cnt <= 10'd0;
+        else
+            v_cnt <= v_cnt + 1'b1;
+    end
+end
+
+
+always @(posedge pix_clk or negedge rst_n) begin
+    if(!rst_n)
+        hsync <= 1'b1;
+    else begin
+        
+        hsync <= ~(h_cnt >= H_FRONT && h_cnt < H_FRONT + H_SYNC);
+    end
+end
+
+
+always @(posedge pix_clk or negedge rst_n) begin
+    if(!rst_n)
+        vsync <= 1'b1;
+    else begin
+       
+        vsync <= ~(v_cnt >= V_FRONT && v_cnt < V_FRONT + V_SYNC);
+    end
+end
+
+
+assign valid = (h_cnt < H_ACTIVE) && (v_cnt < V_ACTIVE);
+
+endmodule
