@@ -1,0 +1,131 @@
+module vga_fsm_top(
+    input  wire        sys_clk,        
+    input  wire        sys_rst_n,      
+	 input  wire        button,//low active
+    output reg        hsync,          
+    output reg        vsync,          
+    output reg [4:0]  red,           
+    output reg [5:0]  green,         
+    output reg [4:0]  blue            
+);
+
+wire hsync_cb,vsync_cb,hsync_ustm,vsync_ustm,hsync_end,vsync_end;
+wire [15:0]rgb_cb;
+wire [4:0] red_ustm,blue_ustm,red_end,blue_end;
+wire [5:0]green_ustm,green_end;
+wire pix_clk;
+reg [1:0]state;
+wire button_pulse;
+key_debounce key_debounce_inst
+(
+	.clk(sys_clk) ,	// input  clk_sig
+	.rst_n(sys_rst_n) ,	// input  rst_n_sig
+	.key_in(button) ,	// input  key_in_sig
+	.key_out(button_pulse) 	// output  key_out_sig
+);
+
+defparam key_debounce_inst.DEBOUNCE_CNT = 'b00001100001101010000;
+
+
+always@(*)begin
+		case (state)
+		0:begin
+			hsync = hsync_cb;
+			vsync = vsync_cb;
+			red   = rgb_cb[15:11];
+			green = rgb_cb[10:5];
+			blue = rgb_cb[4:0];
+		end
+		1:begin
+			hsync = hsync_ustm;
+			vsync = vsync_ustm;
+			red   = red_ustm;
+			green = green_ustm;
+			blue = blue_ustm;
+		end
+		2:begin
+			hsync = hsync_end;
+			vsync = vsync_end;
+			red   = red_end;
+			green = green_end;
+			blue = blue_end;
+		end	
+	endcase	
+end
+always@(posedge sys_clk or negedge  sys_rst_n)begin
+			if(~sys_rst_n)begin
+			state <=0;
+			
+			end
+			else begin
+				case (state)
+				0:begin//color
+					if(button_pulse)state <=state +1;
+						else state <= state;
+				end
+				
+				1:begin//must
+					if(button_pulse)state <=state +1;
+						else state <= state;
+				end
+				2:begin//end
+				state <= state;				
+				
+				end
+				default:begin
+				
+					state <=0;
+				end
+			endcase	
+			end
+
+
+end
+
+pll u_pll_25mhz(
+    .inclk0  (sys_clk),
+    .c0      (pix_clk),
+    .locked  (pll_locked)
+);
+
+
+ColorBar ColorBar_inst
+(
+	.sys_clk(sys_clk) ,	// input  sys_clk_sig
+	.sys_rst_n(sys_rst_n) ,	// input  sys_rst_n_sig
+	.hsync(hsync_cb) ,	// output  hsync_sig
+	.vsync(vsync_cb) ,	// output  vsync_sig
+	.rgb(rgb_cb) 	// output [15:0] rgb_sig
+);
+
+
+vga_ustm_top vga_ustm_top_inst
+(
+	.pix_clk(pix_clk) ,	// input  pix_clk_sig
+	.sys_rst_n(sys_rst_n) ,	// input  sys_rst_n_sig
+	.hsync(hsync_ustm) ,	// output  hsync_sig
+	.vsync(vsync_ustm) ,	// output  vsync_sig
+	.red(red_ustm) ,	// output [4:0] red_sig
+	.green(green_ustm) ,	// output [5:0] green_sig
+	.blue(blue_ustm) 	// output [4:0] blue_sig
+);
+
+vga_end_top vga_end_top_inst
+(
+	.pix_clk(pix_clk) ,	// input  pix_clk_sig
+	.sys_rst_n(sys_rst_n) ,	// input  sys_rst_n_sig
+	.hsync(hsync_end) ,	// output  hsync_sig
+	.vsync(vsync_end) ,	// output  vsync_sig
+	.red(red_end) ,	// output [4:0] red_sig
+	.green(green_end) ,	// output [5:0] green_sig
+	.blue(blue_end) 	// output [4:0] blue_sig
+);
+
+
+
+
+
+
+
+
+endmodule
