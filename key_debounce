@@ -1,0 +1,54 @@
+module key_debounce (
+    input           clk,       
+    input           rst_n,      
+    input           key_in,     
+    output  reg     key_out     
+);
+
+
+parameter   DEBOUNCE_CNT = 20'd50000;  
+
+
+reg     [19:0]  cnt;         
+reg             key_sync1;   
+reg             key_sync2;   
+reg             key_state;   
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        key_sync1 <= 1'b1;    
+        key_sync2 <= 1'b1;
+    end else begin
+        key_sync1 <= key_in;
+        key_sync2 <= key_sync1;
+    end
+end
+
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt <= 20'd0;
+        key_state <= 1'b1;
+    end else begin
+        if (key_sync2 != key_state) begin  
+            cnt <= DEBOUNCE_CNT;          
+        end else if (cnt > 20'd0) begin    
+            cnt <= cnt - 20'd1;            
+        end else begin                     
+            key_state <= key_sync2;       
+        end
+    end
+end
+
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        key_out <= 1'b1;
+    end else begin
+        if (cnt == 20'd0) begin            
+            key_out <= key_state;
+        end
+    end
+end
+
+endmodule
