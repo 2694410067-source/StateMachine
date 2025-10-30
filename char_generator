@@ -1,0 +1,153 @@
+module char_generator(
+    input  wire        pix_clk,    
+    input  wire        rst_n,     
+    input  wire        valid,      
+    input  wire [9:0]  h_cnt,      
+    input  wire [9:0]  v_cnt,     
+    output reg         pixel_data  
+);
+
+
+localparam CHAR_X_START = 280;   
+localparam CHAR_Y_START = 232;    
+localparam CHAR_WIDTH   = 8;      
+localparam CHAR_HEIGHT  = 16;     
+localparam CHAR_SPACE   = 2;     
+
+
+
+
+
+
+localparam [15:0][7:0] CHAR_U = {
+8'b00000000,
+8'b00000000,
+8'b00000000,
+8'b11101110,
+8'b01101100,
+8'b01101100,
+8'b01101100,
+8'b01101100,
+8'b01101100,
+8'b01010100,
+8'b01010100,
+8'b01010100,
+8'b01010100,
+8'b11010110,
+8'b00000000,
+8'b00000000,
+};
+
+
+localparam [15:0][7:0] CHAR_S = {
+    8'b00000000,
+	 8'b00000000,
+	 8'b00000000,
+	 8'b11100111,
+    8'b01000010, 
+	 8'b01000010,
+	 8'b01000010, 
+	 8'b01000010,
+    8'b01000010, 
+	 8'b01000010, 
+	 8'b01000010, 
+	 8'b01000010,
+    8'b01000010, 
+	 8'b00111100, 
+	 8'b00000000,
+	 8'b00000000
+};
+
+
+localparam [15:0][7:0] CHAR_T = {
+    8'b00000000, 
+	 8'b00000000, 
+	 8'b00000000, 
+	 8'b00111110,
+    8'b01000010, 
+	 8'b01000010, 
+	 8'b01000000, 
+	 8'b00100000,
+    8'b00011000, 
+	 8'b00000100, 
+	 8'b00000010, 
+	 8'b01000010,
+    8'b01000010, 
+	 8'b01111100, 
+	 8'b00000000, 
+	 8'b00000000
+};
+
+
+localparam [15:0][7:0] CHAR_M = {
+    8'b00000000,  
+    8'b00000000,  
+    8'b00000000,  
+    8'b11111110, 
+    8'b10010010,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00010000,  
+    8'b00111000,  
+    8'b00000000,  
+    8'b00000000   
+};
+
+
+reg [3:0] row_offset;   
+reg [2:0] col_offset;     
+
+
+
+
+
+always @(*) begin
+    if(!rst_n || !valid) begin
+        pixel_data = 1'b0;
+    end else begin
+        
+        if(v_cnt >= CHAR_Y_START && v_cnt < CHAR_Y_START + CHAR_HEIGHT) begin
+         
+		row_offset = (CHAR_HEIGHT - 1) - (v_cnt - CHAR_Y_START);  
+            
+            
+            if(h_cnt >= CHAR_X_START && h_cnt < CHAR_X_START + CHAR_WIDTH) begin
+                col_offset = h_cnt - CHAR_X_START;  
+                pixel_data = CHAR_U[row_offset][7 - col_offset];  
+            end
+            
+            else if(h_cnt >= CHAR_X_START + CHAR_WIDTH + CHAR_SPACE 
+                 && h_cnt < CHAR_X_START + 2*CHAR_WIDTH + CHAR_SPACE) begin
+                col_offset = h_cnt - (CHAR_X_START + CHAR_WIDTH + CHAR_SPACE);
+                pixel_data = CHAR_S[row_offset][7 - col_offset];
+            end
+            
+            else if(h_cnt >= CHAR_X_START + 2*CHAR_WIDTH + 2*CHAR_SPACE 
+                 && h_cnt < CHAR_X_START + 3*CHAR_WIDTH + 2*CHAR_SPACE) begin
+                col_offset = h_cnt - (CHAR_X_START + 2*CHAR_WIDTH + 2*CHAR_SPACE);
+                pixel_data = CHAR_T[row_offset][7 - col_offset];
+            end
+            
+				else if(h_cnt >= CHAR_X_START + 3*CHAR_WIDTH + 3*CHAR_SPACE 
+						&& h_cnt < CHAR_X_START + 4*CHAR_WIDTH + 4*CHAR_SPACE) begin
+						col_offset = h_cnt - (CHAR_X_START + 3*CHAR_WIDTH + 3*CHAR_SPACE);
+						pixel_data = CHAR_M[row_offset][7 - col_offset];  
+				end
+            else begin
+                pixel_data = 1'b0; 
+            end
+        end
+        else begin
+            pixel_data = 1'b0;  
+        end
+    end
+end
+
+
+
+endmodule
